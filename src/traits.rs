@@ -6,7 +6,7 @@ use embedded_hal::{
 
 /// All commands need to have this trait which gives the address of the command
 /// which needs to be send via SPI with activated CommandsPin (Data/Command Pin in CommandMode)
-pub(crate) trait Command {
+pub(crate) trait Command: Copy {
     fn address(self) -> u8;
 }
 
@@ -26,13 +26,14 @@ impl Default for RefreshLUT {
     }
 }
 
-pub(crate) trait InternalWiAdditions<SPI, CS, BUSY, DC, RST>
+pub(crate) trait InternalWiAdditions<SPI, CS, BUSY, DC, RST, DELAY>
 where
     SPI: Write<u8>,
     CS: OutputPin,
     BUSY: InputPin,
     DC: OutputPin,
     RST: OutputPin,
+    DELAY: DelayMs<u8>,
 {
     /// This initialises the EPD and powers it up
     ///
@@ -44,22 +45,19 @@ where
     /// This function calls [reset](WaveshareDisplay::reset),
     /// so you don't need to call reset your self when trying to wake your device up
     /// after setting it to sleep.
-    fn init<DELAY: DelayMs<u8>>(
-        &mut self,
-        spi: &mut SPI,
-        delay: &mut DELAY,
-    ) -> Result<(), SPI::Error>;
+    fn init(&mut self, spi: &mut SPI) -> Result<(), SPI::Error>;
 }
 
 /// Functions to interact with three color panels
-pub trait WaveshareThreeColorDisplay<SPI, CS, BUSY, DC, RST>:
-    WaveshareDisplay<SPI, CS, BUSY, DC, RST>
+pub trait WaveshareThreeColorDisplay<SPI, CS, BUSY, DC, RST, DELAY>:
+    WaveshareDisplay<SPI, CS, BUSY, DC, RST, DELAY>
 where
     SPI: Write<u8>,
     CS: OutputPin,
     BUSY: InputPin,
     DC: OutputPin,
     RST: OutputPin,
+    DELAY: DelayMs<u8>,
 {
     /// Transmit data to the SRAM of the EPD
     ///
@@ -127,26 +125,27 @@ where
 ///# Ok(())
 ///# }
 ///```
-pub trait WaveshareDisplay<SPI, CS, BUSY, DC, RST>
+pub trait WaveshareDisplay<SPI, CS, BUSY, DC, RST, DELAY>
 where
     SPI: Write<u8>,
     CS: OutputPin,
     BUSY: InputPin,
     DC: OutputPin,
     RST: OutputPin,
+    DELAY: DelayMs<u8>,
 {
     /// The Color Type used by the Display    
     type DisplayColor;
     /// Creates a new driver from a SPI peripheral, CS Pin, Busy InputPin, DC
     ///
     /// This already initialises the device.
-    fn new<DELAY: DelayMs<u8>>(
+    fn new(
         spi: &mut SPI,
         cs: CS,
         busy: BUSY,
         dc: DC,
         rst: RST,
-        delay: &mut DELAY,
+        delay: DELAY,
     ) -> Result<Self, SPI::Error>
     where
         Self: Sized;
@@ -159,11 +158,7 @@ where
     /// Wakes the device up from sleep
     ///
     /// Also reintialises the device if necessary.
-    fn wake_up<DELAY: DelayMs<u8>>(
-        &mut self,
-        spi: &mut SPI,
-        delay: &mut DELAY,
-    ) -> Result<(), SPI::Error>;
+    fn wake_up(&mut self, spi: &mut SPI) -> Result<(), SPI::Error>;
 
     /// Sets the backgroundcolor for various commands like [clear_frame](WaveshareDisplay::clear_frame)
     fn set_background_color(&mut self, color: Self::DisplayColor);

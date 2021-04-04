@@ -72,16 +72,16 @@ pub mod color;
 /// Interface for the physical connection between display and the controlling device
 mod interface;
 
-pub mod epd1in54;
-pub mod epd1in54b;
-pub mod epd1in54c;
-pub mod epd2in13_v2;
-pub mod epd2in7b;
-pub mod epd2in9;
-pub mod epd2in9bc;
-pub mod epd4in2;
-pub mod epd5in65f;
-pub mod epd7in5;
+// pub mod epd1in54;
+// pub mod epd1in54b;
+// pub mod epd1in54c;
+// pub mod epd2in13_v2;
+// pub mod epd2in7b;
+// pub mod epd2in9;
+// pub mod epd2in9bc;
+// pub mod epd4in2;
+// pub mod epd5in65f;
+// pub mod epd7in5;
 pub mod epd7in5_v2;
 
 pub(crate) mod type_a;

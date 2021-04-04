@@ -6,9 +6,9 @@ use embedded_graphics::pixelcolor::BinaryColor;
 use embedded_graphics::pixelcolor::PixelColor;
 
 #[cfg(feature = "graphics")]
-pub use BinaryColor::Off as White;
+pub use BinaryColor::Off as Black;
 #[cfg(feature = "graphics")]
-pub use BinaryColor::On as Black;
+pub use BinaryColor::On as White;
 
 /// When trying to parse u8 to one of the color types
 #[derive(Debug, PartialEq, Eq)]
@@ -127,24 +127,24 @@ impl Color {
     /// Get the color encoding of the color for one bit
     pub fn get_bit_value(self) -> u8 {
         match self {
-            Color::White => 1u8,
-            Color::Black => 0u8,
+            Color::White => 0u8,
+            Color::Black => 1u8,
         }
     }
 
     /// Gets a full byte of black or white pixels
     pub fn get_byte_value(self) -> u8 {
         match self {
-            Color::White => 0xff,
-            Color::Black => 0x00,
+            Color::White => 0x00,
+            Color::Black => 0xff,
         }
     }
 
     /// Parses from u8 to Color
     fn from_u8(val: u8) -> Self {
         match val {
-            0 => Color::Black,
-            1 => Color::White,
+            1 => Color::Black,
+            0 => Color::White,
             e => panic!(
                 "DisplayColor only parses 0 and 1 (Black and White) and not `{}`",
                 e
@@ -175,8 +175,8 @@ mod tests {
 
     #[test]
     fn from_u8() {
-        assert_eq!(Color::Black, Color::from(0u8));
-        assert_eq!(Color::White, Color::from(1u8));
+        assert_eq!(Color::Black, Color::from(1u8));
+        assert_eq!(Color::White, Color::from(0u8));
     }
 
     // test all values aside from 0 and 1 which all should panic

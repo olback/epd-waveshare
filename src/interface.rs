@@ -7,7 +7,7 @@ use embedded_hal::{
 
 /// The Connection Interface of all (?) Waveshare EPD-Devices
 ///
-pub(crate) struct DisplayInterface<SPI, CS, BUSY, DC, RST> {
+pub(crate) struct DisplayInterface<SPI, CS, BUSY, DC, RST, DELAY> {
     /// SPI
     _spi: PhantomData<SPI>,
     /// CS for SPI
@@ -18,23 +18,27 @@ pub(crate) struct DisplayInterface<SPI, CS, BUSY, DC, RST> {
     dc: DC,
     /// Pin for Reseting
     rst: RST,
+    /// Delay
+    delay: DELAY,
 }
 
-impl<SPI, CS, BUSY, DC, RST> DisplayInterface<SPI, CS, BUSY, DC, RST>
+impl<SPI, CS, BUSY, DC, RST, DELAY> DisplayInterface<SPI, CS, BUSY, DC, RST, DELAY>
 where
     SPI: Write<u8>,
     CS: OutputPin,
     BUSY: InputPin,
     DC: OutputPin,
     RST: OutputPin,
+    DELAY: DelayMs<u8>,
 {
-    pub fn new(cs: CS, busy: BUSY, dc: DC, rst: RST) -> Self {
+    pub fn new(cs: CS, busy: BUSY, dc: DC, rst: RST, delay: DELAY) -> Self {
         DisplayInterface {
             _spi: PhantomData::default(),
             cs,
             busy,
             dc,
             rst,
+            delay,
         }
     }
 
@@ -126,11 +130,18 @@ where
     ///
     /// Most likely there was a mistake with the 2in9 busy connection
     /// //TODO: use the #cfg feature to make this compile the right way for the certain types
-    pub(crate) fn wait_until_idle(&mut self, is_busy_low: bool) {
+    pub(crate) fn wait_until_idle<T: Command>(
+        &mut self,
+        spi: &mut SPI,
+        command: T,
+        is_busy_low: bool,
+    ) {
         //tested: worked without the delay for all tested devices
         //self.delay_ms(1);
 
         while self.is_busy(is_busy_low) {
+            let _ = self.cmd(spi, command);
+            self.delay.delay_ms(20);
             //tested: REMOVAL of DELAY: it's only waiting for the signal anyway and should continue work asap
             //old: shorten the time? it was 100 in the beginning
             //self.delay_ms(5);
@@ -162,15 +173,15 @@ where
     /// The timing of keeping the reset pin low seems to be important and different per device.
     /// Most displays seem to require keeping it low for 10ms, but the 7in5_v2 only seems to reset
     /// properly with 2ms
-    pub(crate) fn reset<DELAY: DelayMs<u8>>(&mut self, delay: &mut DELAY, duration: u8) {
+    pub(crate) fn reset(&mut self, duration: u8) {
         let _ = self.rst.set_high();
-        delay.delay_ms(10);
+        self.delay.delay_ms(10);
 
         let _ = self.rst.set_low();
-        delay.delay_ms(duration);
+        self.delay.delay_ms(duration);
         let _ = self.rst.set_high();
         //TODO: the upstream libraries always sleep for 200ms here
         // 10ms works fine with just for the 7in5_v2 but this needs to be validated for other devices
-        delay.delay_ms(200);
+        self.delay.delay_ms(200);
     }
 }
